@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>NEOGN</title>
+<title>Intranet — Gendarmerie Nationale</title>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -183,7 +183,7 @@ tr:hover td{background:#f9fafe}
 <!-- ==================== APP ==================== -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-brand"><div class="topbar-logo">⚜️</div>NEOGN</div>
+    <div class="topbar-brand"><div class="topbar-logo">⚜️</div>Gendarmerie Nationale — Intranet</div>
     <div class="topbar-search"><input type="text" placeholder="Recherche..."></div>
     <div class="topbar-right">
       <div class="topbar-user" onclick="document.getElementById('udrop').classList.toggle('open')">
@@ -432,9 +432,9 @@ tr:hover td{background:#f9fafe}
       <!-- ===== FORMATION ===== -->
       <div class="pg" id="pg-formation">
         <div class="page-title">Formation</div>
-        <div class="page-sub">Inscriptions, qualifications et examens</div>
+        <div class="page-sub">E-learning, inscriptions, qualifications, examens</div>
         <div class="cards-grid">
-          <button class="card-btn">Accéder</button></div>
+          <div class="card"><div class="card-icon">💻</div><div class="card-title">E-learning</div><div class="card-desc">Modules disponibles en ligne</div><button class="card-btn">Accéder</button></div>
           <div class="card"><div class="card-icon">📝</div><div class="card-title">S'inscrire</div><div class="card-desc">Formations présentielles à venir</div><button class="card-btn" onclick="openModal('modal-inscription')">Inscription</button></div>
           <div class="card"><div class="card-icon">🏅</div><div class="card-title">Mes qualifications</div><div class="card-desc">Voir mon profil & qualifications</div><button class="card-btn" onclick="goPage('qualifications')">Consulter</button></div>
           <div class="card"><div class="card-icon">📋</div><div class="card-title">Examens internes</div><div class="card-desc">Concours et épreuves de grade</div><button class="card-btn" onclick="goPage('examens')">Voir</button></div>
