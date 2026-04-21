@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>NEOGN — Plateforme Nationale</title>
+<title>Plateforme Connexion FDO</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -23,19 +23,6 @@ body{background:#6363d4;height:100vh;overflow:hidden}
 .portal-card-sub{color:#888;font-size:12px}
 .portal-fondateur{margin-top:8px;color:#666;font-size:12px;cursor:pointer;text-decoration:underline}
 .portal-fondateur:hover{color:#aaa}
-
-/* ===== DARK/LIGHT MODE ===== */
-body.light-mode { background: #e8eaf0 !important; }
-body.light-mode .sidebar { background: #ffffff !important; border-color: #dde0ec !important; }
-body.light-mode .content { background: #f0f2f8 !important; }
-body.light-mode .card,.light-mode .fc,.light-mode .tw,.light-mode .st,.light-mode .mb { background: #ffffff !important; border-color: #dde0ec !important; }
-body.light-mode .nav-item { color: #2a2d4a !important; }
-body.light-mode .sidebar-section { color: #7a7e99 !important; }
-body.light-mode table th { background: #f7f8fc !important; }
-body.light-mode .topbar { /* keep service color */ }
-.theme-btn { background: none; border: 1px solid #ffffff60; color: #fff; border-radius: 20px; padding: 4px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-.theme-btn:hover { background: #ffffff20; }
-
 
 /* ===== LOGIN ===== */
 #login-screen{height:100vh;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
@@ -377,9 +364,9 @@ let MEM = {
   stats_gn:{interventions:0,gav:0,patrouilles:0,procedures:0},
   stats_pn:{interventions:0,gav:0,patrouilles:0,procedures:0},
   stats_jus:{recu:0,attente:0,valide:0,refuse:0},
-  webhooks:{conge_gn:WH.conge_gn,formation_gn:WH.formation_gn,justice:WH.justice,inter_gn:'',inter_pn:'',conge_pn:'',formation_pn:'',conge_jus:''},
+  webhooks:{conge_gn:WH.conge_gn,formation_gn:WH.formation_gn,justice:WH.justice},
   typeInterventions:{gn:['Urgence','Accident','Flagrant délit','Patrouille','Information'],pn:['Urgence','Accident','Flagrant délit','CIC','Information']},
-  aptitudes:{gn:['Apte CORG','Apte RH','Formateur','OPJ','Gestion Mention de service'],pn:['Apte CIC','Apte RH','Formateur','OPJ','Gestion MCPN'],justice:['Magistrat','Greffe','Préfecture','Admin judiciaire']},
+  aptitudes:{gn:['Apte CORG','Apte RH','Formateur','OPJ'],pn:['Apte CIC','Apte RH','Formateur','OPJ'],justice:['Magistrat','Greffe','Préfecture','Admin judiciaire']},
 };
 
 // ============================================================
@@ -406,38 +393,14 @@ function hasPerm(perm){
   if(perm==='rh')return CU.aptRh||false;
   if(perm==='formateur')return CU.formateur||false;
   if(perm==='opj')return CU.aptOPJ||false;
-  if(perm==='agenda')return CU.aptAgenda||false;
-  if(perm==='patrouille'){
-    // SOG/OFF (GN) ou CEA/CC (PN) peuvent créer des patrouilles
-    let r=CU.role;
-    return r==='SOG'||r==='OFF'||r==='CEA'||r==='CC'||CU.aptCorg;
+  if(perm==='agenda'){
+    let roles=CU.service?customRoles[CU.service]||[]:[];
+    let r=roles.find(r=>r.name===CU.role);
+    return r&&r.perms&&r.perms.includes('agenda');
   }
   return false;
 }
-function canAccessPage(page){
-  if(!CU)return false;
-  if(CU.role==='ADMIN'||CU.role==='FONDATEUR')return true;
-  let r=CU.role;
-  let s=SERVICE;
-  // Pages accessibles à tous les rôles connectés (sauf admin-only)
-  const allRoles=['dashboard','grades','personnel','logistique','statistiques','formation','qualifications','examens','bases','fpr','taj','foves'];
-  if(allRoles.includes(page))return true;
-  if(page==='mentionservice')return hasPerm('agenda')||r==='SOG'||r==='OFF'||r==='MILT'||r==='PA'||r==='CEA'||r==='CC';
-  if(page==='operations')return true;
-  if(page==='corg')return hasPerm('corg');
-  if(page==='judiciaire')return hasPerm('opj');
-  if(page==='documents')return hasPerm('opj');
-  if(page==='rh')return hasPerm('rh');
-  if(page==='avancement')return true;
-  if(page==='dossier')return true;
-  // Justice
-  if(s==='justice'){
-    if(r==='JUS')return ['dashboard','proc-fdo','judiciaire','personnel','statistiques'].includes(page);
-    if(r==='PREF')return ['dashboard','prefecture','personnel','statistiques'].includes(page);
-  }
-  return true;
-}
-function serviceLabel(s){return s==='gn'?'Gendarmerie Nationale':s==='pn'?'DIPN 13 - Police Nationale':s==='justice'?'Justice / Préfecture':'Fondateur';}
+function serviceLabel(s){return s==='gn'?'Gendarmerie Nationale':s==='pn'?'Police Nationale':s==='justice'?'Justice / Préfecture':'Fondateur';}
 function serviceColor(s){return s==='gn'?'#0d1b2a':s==='pn'?'#1a237e':s==='justice'?'#4a1942':'#1a1a1a';}
 function serviceIcon(s){return s==='gn'?'⚜️':s==='pn'?'🚔':s==='justice'?'⚖️':'🔐';}
 
@@ -501,7 +464,7 @@ function goLogin(service){
   let colors={gn:'#0d1b2a',pn:'#1a237e',justice:'#4a1942',fondateur:'#1a1a1a'};
   let icons={gn:'⚜️',pn:'🚔',justice:'⚖️',fondateur:'🔐'};
   let titles={gn:'Gendarmerie Nationale<br><span>Intranet sécurisé — DGGN</span>',
-    pn:'DIPN 13 - Police Nationale<br><span>Intranet sécurisé — DGPN</span>',
+    pn:'Police Nationale<br><span>Intranet sécurisé — DIPN</span>',
     justice:'Justice / Préfecture<br><span>Pôle Judiciaire</span>',
     fondateur:'Accès Fondateur<br><span>Panel de supervision</span>'};
   $('l-icon').textContent=icons[service];
@@ -559,8 +522,7 @@ function buildApp(){
   let c=serviceColor(SERVICE);
   $('topbar').style.background=c;
   $('tb-logo').textContent=serviceIcon(SERVICE);
-  let brandName = SERVICE==='pn' ? 'DIPN 13 - Police Nationale' : 'NEOGN — '+serviceLabel(SERVICE);
-  $('tb-brand').textContent=brandName;
+  $('tb-brand').textContent='NEOGN — '+serviceLabel(SERVICE);
   $('nav-name').textContent=CU.nom+' '+CU.prenom;
   $('ud-name').textContent=CU.nom+' '+CU.prenom;
   $('ud-meta').textContent='Service: '+serviceLabel(SERVICE)+' | Rôle: '+(CU.role||'—');
@@ -593,7 +555,7 @@ function buildSidebar(){
     html+=nav('operations','🚓','Interventions');
     if(hasPerm('corg'))html+=nav('corg','📡','Panel CORG','CORG');
     html+=sec('Judiciaire');
-    if(hasPerm('opj'))html+=nav('judiciaire','⚖️','Procédures judiciaires');
+    html+=nav('judiciaire','⚖️','Procédures');
     html+=nav('bases','📡','Bases de données');
     html+=sec('Personnel');
     html+=nav('personnel','👮','Gestion personnel');
@@ -601,6 +563,7 @@ function buildSidebar(){
     html+=nav('formation','🎓','Formation');
     if(hasPerm('rh'))html+=nav('rh','📊','RH & administratif');
     html+=sec('Ressources');
+    if(hasPerm('opj'))html+=nav('documents','📁','Documents & Procédures');
     html+=nav('logistique','🚒','Logistique');
     html+=nav('statistiques','📈','Statistiques');
     if(u.role==='ADMIN'){
@@ -620,7 +583,7 @@ function buildSidebar(){
     html+=nav('operations','🚓','Interventions');
     if(hasPerm('corg'))html+=nav('corg','📡','Poste CIC','CIC');
     html+=sec('Judiciaire');
-    if(hasPerm('opj'))html+=nav('judiciaire','⚖️','Procédures judiciaires');
+    html+=nav('judiciaire','⚖️','Procédures');
     html+=nav('bases','📡','Bases de données');
     html+=sec('Personnel');
     html+=nav('personnel','👮','Gestion personnel');
@@ -628,6 +591,7 @@ function buildSidebar(){
     html+=nav('formation','🎓','Formation');
     if(hasPerm('rh'))html+=nav('rh','📊','RH & administratif');
     html+=sec('Ressources');
+    if(hasPerm('opj'))html+=nav('documents','📁','Documents & Procédures');
     html+=nav('logistique','🚒','Logistique');
     html+=nav('statistiques','📈','Statistiques');
     if(u.role==='ADMIN'){
@@ -642,21 +606,15 @@ function buildSidebar(){
     }
   } else if(s==='justice'){
     html+=nav('dashboard','🏠','Tableau de bord');
-    let r=u.role;
-    if(r==='ADMIN'||r==='JUS'){
-      html+=sec('Judiciaire');
-      html+=nav('proc-fdo','📁','Procédures FDO');
-      html+=nav('judiciaire','⚖️','Traitement judiciaire');
-    }
-    if(r==='ADMIN'||r==='PREF'){
-      html+=sec('Préfecture');
-      html+=nav('prefecture','🏛️','Préfecture');
-    }
-    html+=sec('Gestion');
+    html+=sec('Procédures');
+    html+=nav('proc-fdo','📁','Procédures FDO');
+    html+=nav('judiciaire','⚖️','Traitement judiciaire');
+    html+=sec('Administration');
+    html+=nav('prefecture','🏛️','Préfecture');
     html+=nav('personnel','👥','Utilisateurs');
     html+=nav('statistiques','📈','Statistiques');
-    if(r==='ADMIN'){
-      html+=sec('Administration');
+    if(u.role==='ADMIN'){
+      html+=sec('Config');
       html+=nav('admin','⚙️','Administration');
       html+=nav('admin-roles','🎭','Rôles & Permissions');
     }
@@ -820,7 +778,7 @@ PAGES['operations']=async function(){
   </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#888;padding:14px">Aucune intervention</td></tr>'}
   </tbody></table></div>
   ${hasPerm('corg')?`
-  <div class="fc"><div class="ft">🚓 Créer une patrouille (CEA+)</div>
+  <div class="fc"><div class="ft">🚓 Créer une patrouille (SOG+)</div>
     <div class="fr-row"><div class="fr"><label>Équipage</label><input type="text" id="pat-eq" placeholder="Noms séparés par virgule"></div><div class="fr"><label>Véhicule</label><input type="text" id="pat-veh" placeholder="Immat."></div></div>
     <div class="fr-row"><div class="fr"><label>Secteur</label><input type="text" id="pat-sec"></div><div class="fr"><label>Heure</label><input type="time" id="pat-h" value="${fmtNow()}"></div></div>
     <button class="cbtn green" onclick="savePatrouille()">Créer la patrouille</button>
@@ -885,18 +843,10 @@ PAGES['corg']=async function(){
 };
 async function saveCORG(){
   let type=$('ci-type').value;
-  let data={type,heure:$('ci-heure').value,description:$('ci-desc').value,lieu:$('ci-lieu').value,equipage:$('ci-eq').value,vehicule:$('ci-veh').value,secteur:$('ci-sec').value,statut:'En cours',service:SERVICE,createdBy:CU.uid,createdByNom:CU.nom+' '+CU.prenom};
+  let data={type,heure:$('ci-heure').value,description:$('ci-desc').value,lieu:$('ci-lieu').value,equipage:$('ci-eq').value,vehicule:$('ci-veh').value,secteur:$('ci-sec').value,statut:'En cours',service:SERVICE,createdBy:CU.uid};
   let col=type==='Patrouille'?'patrouilles':'interventions';
   await dbAdd(col,data);await incrStat(SERVICE,'interventions');
   await dbAdd('mentions',{...data,unite:data.equipage});
-  // Webhook intervention
-  let whKey = SERVICE==='pn' ? 'inter_pn' : 'inter_gn';
-  let wh = MEM.webhooks[whKey];
-  if(wh){ await sendWebhook(wh,{username:'NEOGN — '+SERVICE.toUpperCase()+' '+type,embeds:[{title:'🚨 Nouvelle intervention — '+(SERVICE==='pn'?'CIC':'CORG'),color:SERVICE==='pn'?0x1a237e:0x0d1b2a,fields:[
-    {name:'Type',value:type,inline:true},{name:'Heure',value:data.heure||'—',inline:true},
-    {name:'Description',value:data.description||'—'},{name:'Lieu',value:data.lieu||'—',inline:true},
-    {name:'Équipage',value:data.equipage||'—',inline:true},{name:'Par',value:data.createdByNom||'—',inline:true}
-  ],timestamp:new Date().toISOString()}]}); }
   showToast('Intervention créée !');renderPage('corg');
 }
 async function corgCloture(id){await dbUpdate('interventions',id,{statut:'Clôturé'});renderPage('corg');}
@@ -1200,7 +1150,7 @@ PAGES['personnel']=async function(){
 async function submitConge(){
   let deb=$('cd-deb').value,fin=$('cd-fin').value,motif=$('cd-motif').value,obs=$('cd-obs').value;
   if(!deb||!fin){showToast('Dates requises',false);return;}
-  let wh=SERVICE==='gn'?(MEM.webhooks.conge_gn||WH.conge_gn):SERVICE==='pn'?(MEM.webhooks.conge_pn||WH.conge_gn):(MEM.webhooks.conge_jus||WH.conge_gn);
+  let wh=SERVICE==='gn'?MEM.webhooks.conge_gn:WH.conge_gn;
   await sendWebhook(wh,{username:'NEOGN — Congés',embeds:[{title:'📅 Demande de congés',color:0x0d1b2a,fields:[
     {name:'Agent',value:`${CU.nom} ${CU.prenom} (${CU.rio||'—'}) — ${SERVICE.toUpperCase()}`,inline:false},
     {name:'Période',value:`Du ${deb} au ${fin}`,inline:true},{name:'Motif',value:motif,inline:true},{name:'Obs.',value:obs||'—'}
@@ -1273,7 +1223,7 @@ PAGES['formation']=async function(){
 };
 async function submitInscription(){
   let f=$('ins-f').value;if(!f){showToast('Formation requise',false);return;}
-  let wh=SERVICE==='gn'?(MEM.webhooks.formation_gn||WH.formation_gn):SERVICE==='pn'?(MEM.webhooks.formation_pn||WH.formation_gn):(MEM.webhooks.conge_jus||WH.formation_gn);
+  let wh=SERVICE==='gn'?MEM.webhooks.formation_gn:WH.formation_gn;
   await sendWebhook(wh,{username:'NEOGN — Formation',embeds:[{title:'🎓 Demande d\'inscription formation',color:0x27ae60,fields:[
     {name:'Agent',value:`${CU.nom} ${CU.prenom} (${CU.rio||'—'}) — ${serviceLabel(SERVICE)}`},{name:'Formation',$value:f},
     {name:'Date souhaitée',value:$('ins-d').value||'—',inline:true},{name:'Motivation',value:$('ins-m').value||'—'}
@@ -1500,7 +1450,7 @@ async function adminCreateUser(){
     let el=$(`cu-apt-${a.replace(/\s/g,'_')}`);if(el)apts[a]=el.checked;
   });
   let data={identifiant:id,password:pw,nom:$('cu-nom').value,prenom:$('cu-prenom').value,rio:$('cu-rio').value,ddn:$('cu-ddn').value,ecoles:$('cu-ecoles').value,grade:$('cu-grade').value,role:$('cu-role').value,service:SERVICE,
-    aptCorg:apts['Apte CORG']||apts['Apte CIC']||false,aptRh:apts['Apte RH']||false,formateur:apts['Formateur']||false,aptOPJ:apts['OPJ']||false,aptAgenda:apts['Gestion Mention de service']||apts['Gestion MCPN']||false};
+    aptCorg:apts['Apte CORG']||false,aptRh:apts['Apte RH']||false,formateur:apts['Formateur']||false,aptOPJ:apts['OPJ']||false};
   await dbSet('users',id,data);DEMO_USERS[id]=data;
   showToast('Compte créé !');closeModal('modal-cu');renderPage('admin');
 }
@@ -1564,48 +1514,30 @@ async function adminDelGrade(code){
 PAGES['admin-roles']=async function(){
   if(CU.role!=='ADMIN'){$('content').innerHTML='<div class="al al-red">🔒 Accès requis</div>';return;}
   let roles=customRoles[SERVICE]||[];
-  // Permissions par service
-  const PERMS_GN = [
-    {id:'corg', label:'CORG', desc:'Accès au Panel CORG'},
-    {id:'rh', label:'RH', desc:'Créer/modifier le Tableau d\'avancement'},
-    {id:'formateur', label:'Formateur', desc:'Créer examens & modules E-Learning'},
-    {id:'opj', label:'OPJ', desc:'Accès Procédures judiciaires'},
-    {id:'agenda', label:'Gestion Mention de service', desc:'Créer des Mentions de service'},
-  ];
-  const PERMS_PN = [
-    {id:'corg', label:'CIC', desc:'Accès au Poste CIC'},
-    {id:'rh', label:'RH', desc:'Créer/modifier le Tableau d\'avancement'},
-    {id:'formateur', label:'Formateur', desc:'Créer examens & modules E-Learning'},
-    {id:'opj', label:'OPJ', desc:'Accès Procédures judiciaires'},
-    {id:'agenda', label:'Gestion MCPN', desc:'Créer des MCPN - MS'},
-  ];
-  const PERMS = SERVICE==='pn' ? PERMS_PN : PERMS_GN;
-  $('content').innerHTML=\`
+  const PERMS=['corg','rh','formateur','opj','agenda','voir_stats','voir_logistique','voir_bases'];
+  $('content').innerHTML=`
   <div class="page-title">Rôles & Permissions</div>
   <div class="page-sub">Création de rôles personnalisés avec permissions</div>
   <div class="fc"><div class="ft">➕ Créer un rôle</div>
-    <div class="fr"><label>Nom du rôle *</label><input type="text" id="rl-name" placeholder="Ex: Officier de permanence"></div>
-    <div style="margin:10px 0 6px;font-size:13px;font-weight:700;color:#333">Permissions :</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      \${PERMS.map(p=>\`<label style="display:flex;align-items:flex-start;gap:8px;background:#f7f8fc;border:1px solid #e3e6f0;border-radius:7px;padding:8px;cursor:pointer">
-        <input type="checkbox" id="rl-p-\${p.id}" style="margin-top:2px">
-        <div><div style="font-size:12px;font-weight:700;color:#0d1b2a">\${p.label}</div><div style="font-size:11px;color:#777">\${p.desc}</div></div>
-      </label>\`).join('')}
+    <div class="fr-row"><div class="fr"><label>Nom du rôle *</label><input type="text" id="rl-name" placeholder="Ex: Officier de permanence"></div></div>
+    <div style="margin:10px 0 6px;font-size:12px;font-weight:700;color:#333">Permissions :</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      ${PERMS.map(p=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="rl-p-${p}"> ${p}</label>`).join('')}
     </div>
     <button class="cbtn green" onclick="saveRole()">Créer le rôle</button>
   </div>
-  <div class="tw"><div class="th">🎭 Rôles personnalisés (\${roles.length})</div>
+  <div class="tw"><div class="th">🎭 Rôles personnalisés (${roles.length})</div>
   <table><thead><tr><th>Nom</th><th>Permissions</th><th>Action</th></tr></thead>
-  <tbody>\${roles.length?roles.map(r=>\`<tr>
-    <td><strong>\${r.name}</strong></td>
-    <td>\${(r.perms||[]).map(pid=>{ let p=PERMS.find(x=>x.id===pid); return \`<span class="perm-tag">\${p?p.label:pid}</span>\`; }).join(' ')||'—'}</td>
-    <td><button class="cbtn red" onclick="delRole('\${r.name}')">Suppr.</button></td>
-  </tr>\`).join(''):'<tr><td colspan="3" style="text-align:center;color:#888;padding:14px">Aucun rôle personnalisé</td></tr>'}
-  </tbody></table></div>\`;
+  <tbody>${roles.length?roles.map(r=>`<tr>
+    <td><strong>${r.name}</strong></td>
+    <td>${(r.perms||[]).map(p=>`<span class="perm-tag">${p}</span>`).join(' ')||'—'}</td>
+    <td><button class="cbtn red" onclick="delRole('${r.name}')">Suppr.</button></td>
+  </tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:#888;padding:14px">Aucun rôle personnalisé</td></tr>'}
+  </tbody></table></div>`;
 };
 async function saveRole(){
   let name=$('rl-name').value.trim();if(!name){showToast('Nom requis',false);return;}
-  const PERMS=['corg','rh','formateur','opj','agenda'];
+  const PERMS=['corg','rh','formateur','opj','agenda','voir_stats','voir_logistique','voir_bases'];
   let perms=PERMS.filter(p=>$('rl-p-'+p)&&$('rl-p-'+p).checked);
   let r={name,perms,service:SERVICE};
   if(!customRoles[SERVICE])customRoles[SERVICE]=[];
@@ -1774,157 +1706,29 @@ PAGES['proc-fdo']=async function(){
   </tbody></table></div>`;
 };
 async function viewJusProc(id){
-  let x=await dbGetOne('justice_procedures',id);if(!x){showToast('Procédure introuvable',false);return;}
-  let html = procHTML(x);
-  html += '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">';
-  html += '<button class="cbtn green" onclick="validerProc(\''+id+'\')">✅ Valider</button>';
-  html += '<button class="cbtn red" onclick="refuserProc(\''+id+'\')">❌ Refuser</button>';
-  html += '<button class="cbtn navy" onclick="exportProcPDF(\''+id+'\')">📄 PDF</button>';
-  html += '<button class="cbtn red" onclick="closeModal(\'modal-dyn\')">Fermer</button>';
-  html += '</div>';
-  openModalDyn('Procédure — '+(x.titre||'—'), html);
+  let x=await dbGetOne('justice_procedures',id);if(!x)return;
+  openModalDyn('Procédure — '+x.titre,procHTML(x)+`<div style="margin-top:10px;display:flex;gap:8px">
+    <button class="cbtn green" onclick="validerProc('${x.id}')">✅ Valider</button>
+    <button class="cbtn red" onclick="refuserProc('${x.id}')">❌ Refuser</button>
+    <button class="cbtn navy" onclick="exportProcPDF('${x.id}')">PDF</button>
+    <button class="cbtn red" onclick="closeModal('modal-dyn')">Fermer</button>
+  </div>`);
 }
-async function validerProc(id){
-  await dbUpdate('justice_procedures',id,{statut:'Validée'});
-  // Sync vers la procédure originale
-  try{ await dbUpdate('procedures',id,{statut_justice:'Validée'}); }catch{}
-  showToast('Procédure validée !');closeModal('modal-dyn');renderPage('proc-fdo');
-}
-async function refuserProc(id){
-  await dbUpdate('justice_procedures',id,{statut:'Refusée'});
-  try{ await dbUpdate('procedures',id,{statut_justice:'Refusée'}); }catch{}
-  showToast('Procédure refusée.');closeModal('modal-dyn');renderPage('proc-fdo');
-}
+async function validerProc(id){await dbUpdate('justice_procedures',id,{statut:'Validée'});showToast('Procédure validée !');renderPage('proc-fdo');}
+async function refuserProc(id){await dbUpdate('justice_procedures',id,{statut:'Refusée'});showToast('Procédure refusée.');renderPage('proc-fdo');}
 
 PAGES['judiciaire-jus']=PAGES['judiciaire'];
 PAGES['prefecture']=async function(){
-  let permis=await dbGet('pref_permis');
-  let autorisations=await dbGet('pref_autorisations');
-  let arretes=await dbGet('pref_arretes');
-  let crises=await dbGet('pref_crises');
   $('content').innerHTML=`
-  <div class="page-title">🏛️ Préfecture</div>
+  <div class="page-title">Préfecture</div>
   <div class="page-sub">Module administratif préfectoral</div>
-  <div class="sr">
-    <div class="st"><div class="st-n" style="color:#4a1942">${permis.length}</div><div class="st-l">Permis traités</div></div>
-    <div class="st"><div class="st-n" style="color:#e67e22">${autorisations.filter(x=>x.statut==='En attente').length}</div><div class="st-l">Autorisations en attente</div></div>
-    <div class="st"><div class="st-n" style="color:#27ae60">${arretes.length}</div><div class="st-l">Arrêtés publiés</div></div>
-    <div class="st"><div class="st-n" style="color:#e74c3c">${crises.filter(x=>x.actif).length}</div><div class="st-l">Crises actives</div></div>
-  </div>
-
-  <!-- PERMIS -->
-  <div class="tw">
-    <div class="th">🚗 Gestion des permis <button class="cbtn green" onclick="openModal('modal-permis')">+ Nouveau</button></div>
-    <table><thead><tr><th>Nom</th><th>Prénom</th><th>Type action</th><th>Motif</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>
-    <tbody>${permis.length?permis.map(x=>`<tr>
-      <td>${x.nom||'—'}</td><td>${x.prenom||'—'}</td>
-      <td>${badge(x.typeAction||'—',x.typeAction==='Suspension'?'orange':'red')}</td>
-      <td>${x.motif||'—'}</td><td>${fmtDate(x._ts)}</td>
-      <td>${badge(x.statut||'En cours',x.statut==='Levée'?'green':'orange')}</td>
-      <td><button class="cbtn green" onclick="leverPermis('${x.id}')">Lever</button>
-          <button class="cbtn red" onclick="delPref('pref_permis','${x.id}')">Suppr.</button></td>
-    </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:#888;padding:14px">Aucune décision</td></tr>'}
-    </tbody></table>
-  </div>
-
-  <!-- AUTORISATIONS -->
-  <div class="tw">
-    <div class="th">🔫 Autorisations <button class="cbtn green" onclick="openModal('modal-autorisation')">+ Nouvelle</button></div>
-    <table><thead><tr><th>Demandeur</th><th>Type</th><th>Objet</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>
-    <tbody>${autorisations.length?autorisations.map(x=>`<tr>
-      <td>${x.demandeur||'—'}</td><td>${badge(x.type||'—','blue')}</td><td>${x.objet||'—'}</td>
-      <td>${fmtDate(x._ts)}</td>
-      <td>${badge(x.statut||'En attente',x.statut==='Accordée'?'green':x.statut==='Refusée'?'red':'orange')}</td>
-      <td><button class="cbtn green" onclick="validerAuto('${x.id}')">✅</button>
-          <button class="cbtn red" onclick="refuserAuto('${x.id}')">❌</button>
-          <button class="cbtn red" onclick="delPref('pref_autorisations','${x.id}')">Suppr.</button></td>
-    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#888;padding:14px">Aucune autorisation</td></tr>'}
-    </tbody></table>
-  </div>
-
-  <!-- ARRÊTÉS -->
-  <div class="tw">
-    <div class="th">📄 Arrêtés préfectoraux <button class="cbtn green" onclick="openModal('modal-arrete')">+ Publier</button></div>
-    <table><thead><tr><th>Numéro</th><th>Objet</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>
-    <tbody>${arretes.length?arretes.map((x,i)=>`<tr>
-      <td>AP-${String(i+1).padStart(4,'0')}</td><td>${x.objet||'—'}</td>
-      <td>${fmtDate(x._ts)}</td>
-      <td>${badge(x.statut||'Publié',x.statut==='Annulé'?'red':'green')}</td>
-      <td><button class="cbtn orange" onclick="annulerArrete('${x.id}')">Annuler</button>
-          <button class="cbtn red" onclick="delPref('pref_arretes','${x.id}')">Suppr.</button></td>
-    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#888;padding:14px">Aucun arrêté</td></tr>'}
-    </tbody></table>
-  </div>
-
-  <!-- CRISES -->
-  <div class="tw">
-    <div class="th">⚠️ Gestion des crises <button class="cbtn red" onclick="openModal('modal-crise')">+ Déclarer</button></div>
-    <table><thead><tr><th>Intitulé</th><th>Niveau</th><th>Zone</th><th>Date décl.</th><th>Statut</th><th>Action</th></tr></thead>
-    <tbody>${crises.length?crises.map(x=>`<tr>
-      <td><strong>${x.titre||'—'}</strong></td>
-      <td>${badge(x.niveau||'—',x.niveau==='Critique'?'red':x.niveau==='Élevé'?'orange':'blue')}</td>
-      <td>${x.zone||'—'}</td><td>${fmtDate(x._ts)}</td>
-      <td>${badge(x.actif?'Active':'Résolue',x.actif?'red':'green')}</td>
-      <td><button class="cbtn green" onclick="resoldreCrise('${x.id}')">Résoudre</button>
-          <button class="cbtn red" onclick="delPref('pref_crises','${x.id}')">Suppr.</button></td>
-    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#888;padding:14px">Aucune crise</td></tr>'}
-    </tbody></table>
-  </div>
-
-  <!-- MODALS -->
-  ${showModal('modal-permis','🚗 Décision permis',\`
-    <div class="fr-row"><div class="fr"><label>Nom *</label><input type="text" id="pm-nom"></div><div class="fr"><label>Prénom *</label><input type="text" id="pm-prenom"></div></div>
-    <div class="fr-row"><div class="fr"><label>DDN</label><input type="date" id="pm-ddn"></div><div class="fr"><label>N° permis</label><input type="text" id="pm-num"></div></div>
-    <div class="fr-row"><div class="fr"><label>Type d'action</label><select id="pm-type"><option>Suspension</option><option>Retrait</option><option>Restriction</option></select></div><div class="fr"><label>Durée</label><input type="text" id="pm-duree" placeholder="Ex: 3 mois"></div></div>
-    <div class="fr"><label>Motif *</label><textarea id="pm-motif" rows="2"></textarea></div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="cbtn green" onclick="savePermis()">Enregistrer</button><button class="cbtn red" onclick="closeModal('modal-permis')">Annuler</button></div>
-  \`)}
-  ${showModal('modal-autorisation','🔫 Demande d\'autorisation',\`
-    <div class="fr"><label>Demandeur *</label><input type="text" id="au-dem"></div>
-    <div class="fr-row"><div class="fr"><label>Type</label><select id="au-type"><option>Port d\'arme</option><option>Événement public</option><option>Manifestation</option><option>Transport matières</option><option>Autre</option></select></div><div class="fr"><label>Date</label><input type="date" id="au-date"></div></div>
-    <div class="fr"><label>Objet / description *</label><textarea id="au-obj" rows="2"></textarea></div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="cbtn green" onclick="saveAutorisation()">Créer</button><button class="cbtn red" onclick="closeModal('modal-autorisation')">Annuler</button></div>
-  \`)}
-  ${showModal('modal-arrete','📄 Publier un arrêté préfectoral',\`
-    <div class="fr"><label>Objet *</label><input type="text" id="ar-obj" placeholder="Objet de l\'arrêté"></div>
-    <div class="fr"><label>Contenu / texte *</label><textarea id="ar-texte" rows="4"></textarea></div>
-    <div class="fr-row"><div class="fr"><label>Date d\'application</label><input type="date" id="ar-date"></div><div class="fr"><label>Zone concernée</label><input type="text" id="ar-zone"></div></div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="cbtn green" onclick="saveArrete()">Publier</button><button class="cbtn red" onclick="closeModal('modal-arrete')">Annuler</button></div>
-  \`)}
-  ${showModal('modal-crise','⚠️ Déclarer une crise',\`
-    <div class="fr"><label>Intitulé *</label><input type="text" id="cr-titre" placeholder="Ex: Inondations secteur nord"></div>
-    <div class="fr-row"><div class="fr"><label>Niveau</label><select id="cr-niv"><option>Vigilance</option><option>Élevé</option><option>Critique</option></select></div><div class="fr"><label>Zone</label><input type="text" id="cr-zone"></div></div>
-    <div class="fr"><label>Description</label><textarea id="cr-desc" rows="2"></textarea></div>
-    <div class="fr"><label>Services mobilisés</label><input type="text" id="cr-svc" placeholder="Ex: GN, PN, Pompiers..."></div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="cbtn red" onclick="saveCrise()">Déclarer</button><button class="cbtn red" onclick="closeModal('modal-crise')">Annuler</button></div>
-  \`)}`;
+  <div class="cards-grid">
+    <div class="card"><div class="card-icon">🚗</div><div class="card-title">Permis</div><div class="card-desc">Suspension, retrait</div><button class="cbtn navy">Gérer</button></div>
+    <div class="card"><div class="card-icon">🔫</div><div class="card-title">Autorisations</div><div class="card-desc">Armes, événements</div><button class="cbtn navy">Gérer</button></div>
+    <div class="card"><div class="card-icon">📄</div><div class="card-title">Arrêtés</div><div class="card-desc">Arrêtés préfectoraux</div><button class="cbtn navy">Gérer</button></div>
+    <div class="card"><div class="card-icon">⚠️</div><div class="card-title">Crises</div><div class="card-desc">Gestion des crises</div><button class="cbtn navy">Gérer</button></div>
+  </div>`;
 };
-async function savePermis(){
-  let d={nom:$('pm-nom').value,prenom:$('pm-prenom').value,ddn:$('pm-ddn').value,num:$('pm-num').value,typeAction:$('pm-type').value,duree:$('pm-duree').value,motif:$('pm-motif').value,statut:'En cours',auteur:CU.nom+' '+CU.prenom};
-  if(!d.nom||!d.motif){showToast('Champs requis',false);return;}
-  await dbAdd('pref_permis',d);showToast('Décision enregistrée !');closeModal('modal-permis');renderPage('prefecture');
-}
-async function leverPermis(id){await dbUpdate('pref_permis',id,{statut:'Levée'});renderPage('prefecture');}
-async function saveAutorisation(){
-  let d={demandeur:$('au-dem').value,type:$('au-type').value,date:$('au-date').value,objet:$('au-obj').value,statut:'En attente',auteur:CU.nom+' '+CU.prenom};
-  if(!d.demandeur||!d.objet){showToast('Champs requis',false);return;}
-  await dbAdd('pref_autorisations',d);showToast('Autorisation créée !');closeModal('modal-autorisation');renderPage('prefecture');
-}
-async function validerAuto(id){await dbUpdate('pref_autorisations',id,{statut:'Accordée'});renderPage('prefecture');}
-async function refuserAuto(id){await dbUpdate('pref_autorisations',id,{statut:'Refusée'});renderPage('prefecture');}
-async function saveArrete(){
-  let d={objet:$('ar-obj').value,texte:$('ar-texte').value,dateApp:$('ar-date').value,zone:$('ar-zone').value,statut:'Publié',auteur:CU.nom+' '+CU.prenom};
-  if(!d.objet||!d.texte){showToast('Champs requis',false);return;}
-  await dbAdd('pref_arretes',d);showToast('Arrêté publié !');closeModal('modal-arrete');renderPage('prefecture');
-}
-async function annulerArrete(id){await dbUpdate('pref_arretes',id,{statut:'Annulé'});renderPage('prefecture');}
-async function saveCrise(){
-  let d={titre:$('cr-titre').value,niveau:$('cr-niv').value,zone:$('cr-zone').value,description:$('cr-desc').value,services:$('cr-svc').value,actif:true,auteur:CU.nom+' '+CU.prenom};
-  if(!d.titre){showToast('Intitulé requis',false);return;}
-  await dbAdd('pref_crises',d);showToast('Crise déclarée !');closeModal('modal-crise');renderPage('prefecture');
-}
-async function resoldreCrise(id){await dbUpdate('pref_crises',id,{actif:false});renderPage('prefecture');}
-async function delPref(col,id){if(!confirm2('Supprimer ?'))return;await dbDelete(col,id);renderPage('prefecture');}
 
 // ============================================================
 // FONDATEUR
@@ -1975,19 +1779,6 @@ PAGES['f-users']=async function(){
   </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:#888;padding:14px">Aucun compte</td></tr>'}
   </tbody></table></div>`;
 };
-function updateFuRole(){
-  let svc=$('fu-service').value;
-  let sel=$('fu-role');
-  for(let opt of sel.options){
-    let osvc=opt.getAttribute('data-svc')||opt.parentElement.getAttribute('label')||'';
-    opt.style.display='';
-  }
-  // Montrer tous, sélectionner le premier du bon service
-  for(let og of sel.querySelectorAll('optgroup')){
-    let relevant = (svc==='gn'&&og.label.includes('Gendarmerie'))||(svc==='pn'&&og.label.includes('Police'))||(svc==='justice'&&og.label.includes('Justice'));
-    if(relevant && og.options.length>0) { og.options[0].selected=true; break; }
-  }
-}
 function updateFuGrade(){
   let s=$('fu-service').value;
   let grades=s==='gn'?GRADES_GN:s==='pn'?GRADES_PN:GRADES_JUS;
@@ -2016,32 +1807,18 @@ PAGES['f-roles']=async function(){
 PAGES['f-webhooks']=async function(){
   $('content').innerHTML=`
   <div class="page-title">Configuration Webhooks Discord</div>
-  <div class="page-sub">Configurer tous les webhooks de la plateforme</div>
-  <div class="fc"><div class="ft">⚜️ Gendarmerie Nationale</div>
-    <div class="fr"><label>Congés GN</label><input type="text" id="wh-conge-gn" value="${MEM.webhooks.conge_gn||''}"></div>
-    <div class="fr"><label>Inscriptions / Examens GN</label><input type="text" id="wh-form-gn" value="${MEM.webhooks.formation_gn||''}"></div>
-    <div class="fr"><label>Interventions CORG (GN)</label><input type="text" id="wh-inter-gn" value="${MEM.webhooks.inter_gn||''}"></div>
-  </div>
-  <div class="fc"><div class="ft">🚔 Police Nationale (DIPN 13)</div>
-    <div class="fr"><label>Congés PN</label><input type="text" id="wh-conge-pn" value="${MEM.webhooks.conge_pn||''}"></div>
-    <div class="fr"><label>Inscriptions / Examens PN</label><input type="text" id="wh-form-pn" value="${MEM.webhooks.formation_pn||''}"></div>
-    <div class="fr"><label>Interventions CIC (PN)</label><input type="text" id="wh-inter-pn" value="${MEM.webhooks.inter_pn||''}"></div>
-  </div>
-  <div class="fc"><div class="ft">⚖️ Justice / Préfecture</div>
-    <div class="fr"><label>Transmission procédures → Justice</label><input type="text" id="wh-justice" value="${MEM.webhooks.justice||''}"></div>
-    <div class="fr"><label>Congés Justice/Préfecture</label><input type="text" id="wh-conge-jus" value="${MEM.webhooks.conge_jus||''}"></div>
-  </div>
-  <button class="cbtn green" style="margin-top:6px" onclick="saveWebhooks()">💾 Enregistrer tous les webhooks</button>`;
+  <div class="page-sub">Personnaliser les webhooks par service</div>
+  <div class="fc"><div class="ft">⚙️ Webhooks</div>
+    <div class="fr"><label>Webhook Congés GN</label><input type="text" id="wh-conge-gn" value="${MEM.webhooks.conge_gn||''}"></div>
+    <div class="fr"><label>Webhook Formation GN</label><input type="text" id="wh-form-gn" value="${MEM.webhooks.formation_gn||''}"></div>
+    <div class="fr"><label>Webhook Justice (transmission procédures)</label><input type="text" id="wh-justice" value="${MEM.webhooks.justice||''}"></div>
+    <button class="cbtn green" onclick="saveWebhooks()">Enregistrer</button>
+  </div>`;
 };
 async function saveWebhooks(){
   MEM.webhooks.conge_gn=$('wh-conge-gn').value;
   MEM.webhooks.formation_gn=$('wh-form-gn').value;
-  MEM.webhooks.inter_gn=$('wh-inter-gn').value;
-  MEM.webhooks.conge_pn=$('wh-conge-pn').value;
-  MEM.webhooks.formation_pn=$('wh-form-pn').value;
-  MEM.webhooks.inter_pn=$('wh-inter-pn').value;
   MEM.webhooks.justice=$('wh-justice').value;
-  MEM.webhooks.conge_jus=$('wh-conge-jus').value;
   await dbSet('config','webhooks',MEM.webhooks);
   showToast('Webhooks sauvegardés !');
 }
@@ -2083,22 +1860,7 @@ function openModalDyn(title,body){
 // ============================================================
 // INIT
 // ============================================================
-
-// ===== THEME =====
-let darkMode = true;
-function toggleTheme(){
-  darkMode = !darkMode;
-  document.body.classList.toggle('light-mode', !darkMode);
-  let btn = $('theme-btn');
-  if(btn) btn.innerHTML = darkMode ? '🌙 Nuit' : '☀️ Jour';
-  try { localStorage.setItem('neogn-theme', darkMode ? 'dark' : 'light'); } catch(e){}
-}
-function loadTheme(){
-  try { let t = localStorage.getItem('neogn-theme'); if(t === 'light'){ darkMode = false; document.body.classList.add('light-mode'); let btn=$('theme-btn'); if(btn)btn.innerHTML='☀️ Jour'; } } catch(e){}
-}
-
 window.onload=async function(){
-  loadTheme();
   // Charger config depuis Firebase
   try{
     let cfg=await dbGetOne('config','webhooks');if(cfg)Object.assign(MEM.webhooks,cfg);
